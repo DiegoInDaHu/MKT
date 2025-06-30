@@ -1,2 +1,8 @@
-body {font-family: Arial, sans-serif; margin: 20px;}
+body {font-family: Arial, sans-serif;}
 h1 {color: #333;}
+
+/* Layout for sidebar navigation */
+#wrapper {display: flex; min-height: 100vh;}
+#sidebar-wrapper {min-width: 250px;}
+#wrapper.toggled #sidebar-wrapper {margin-left: -250px;}
+#page-content-wrapper {flex: 1; padding: 20px;}
