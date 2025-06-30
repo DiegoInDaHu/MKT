@@ -7,6 +7,9 @@ const SQLiteStore = require('connect-sqlite3')(session);
 const app = express();
 const db = new sqlite3.Database(path.join(__dirname, 'db.sqlite'));
 
+app.set('views', path.join(__dirname, '../frontend'));
+app.set('view engine', 'ejs');
+
 // Ensure users table and default user
 function initDb() {
   db.serialize(() => {
@@ -40,8 +43,7 @@ function checkAuth(req, res, next) {
 }
 
 app.get('/login', (req, res) => {
-  const filePath = path.join(__dirname, '../frontend/login.html');
-  res.sendFile(filePath);
+  res.render('login');
 });
 
 app.post('/login', (req, res) => {
@@ -58,10 +60,7 @@ app.post('/login', (req, res) => {
 });
 
 app.get('/dashboard', checkAuth, (req, res) => {
-  const html = `<!DOCTYPE html>
-  <html><head><meta charset='utf-8'><title>Dashboard</title><link rel='stylesheet' href='/static/style.css'></head>
-  <body><h1>Dashboard Principal</h1><p>Bienvenido, ${req.session.username}!</p><a href='/logout'>Cerrar sesión</a></body></html>`;
-  res.send(html);
+  res.render('dashboard', { username: req.session.username });
 });
 
 app.get('/logout', (req, res) => {
