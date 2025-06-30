@@ -1,0 +1,19 @@
+{
+  "name": "mkt",
+  "version": "1.0.0",
+  "description": "Programa en entorno web para monitorizar dispositivos Mikrotik. Incluye un login sencillo y un dashboard de ejemplo.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "connect-sqlite3": "^0.9.16",
+    "express": "^5.1.0",
+    "express-session": "^1.18.1",
+    "sqlite3": "^5.1.7"
+  }
+}
