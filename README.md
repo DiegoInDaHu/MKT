@@ -1,0 +1,1 @@
+Programa en entorno web que servirá para monitorizar dispositivos Mikrotik que, mediante un script, apuntarán a la máquina que aloje este programa y mostrará en un Dashboard cuáles se encuentran en línea y cuales no.
