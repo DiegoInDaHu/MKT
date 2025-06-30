@@ -1,4 +1,4 @@
-El programa dividirá los archivos en los directorios frontend y backend
+El programa dividirá los archivos en los directorios frontend y backend dependiendo del tipo que sean
 
-Se deberá actualizar el archivo raíz "package.json" siempre que se use una nueva dependencia en el proyecto
+Se pueden usar las librerías y dependencias que hagan falta, siempre y cuando se actualice el archivo raíz "package.json" cuando que se añada una nueva dependencia en el proyecto
 
