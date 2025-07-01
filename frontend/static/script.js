@@ -1,10 +1,16 @@
 document.addEventListener('DOMContentLoaded', function () {
   var menuToggle = document.getElementById('menu-toggle');
   var wrapper = document.getElementById('wrapper');
+  if (wrapper) {
+    if (localStorage.getItem('sidebar-collapsed') === 'true') {
+      wrapper.classList.add('toggled');
+    }
+  }
   if (menuToggle && wrapper) {
     menuToggle.addEventListener('click', function (e) {
       e.preventDefault();
       wrapper.classList.toggle('toggled');
+      localStorage.setItem('sidebar-collapsed', wrapper.classList.contains('toggled'));
     });
   }
 
