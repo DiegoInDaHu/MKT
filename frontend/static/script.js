@@ -45,14 +45,16 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   document.querySelectorAll('.datatable').forEach(function(el) {
-    new DataTable(el, {
-      dom: '<"row mb-3"<"col-sm-12 col-md-6"f><"col-sm-12 col-md-6 text-end"B>>rtip',
-      buttons: [
-        {
-          extend: 'colvis',
-          text: 'Columnas'
-        }
-      ]
-    });
+    var options = {
+      dom: '<"row mb-3 justify-content-end"<"col-auto"f><"col-auto ms-2"B>>rtip',
+      buttons: [{ extend: 'colvis', text: 'Columnas' }]
+    };
+
+    if (el.id === 'usersTable') {
+      options.dom = '<"row mb-3 justify-content-end"<"col-auto"f>>rtip';
+      options.buttons = [];
+    }
+
+    new DataTable(el, options);
   });
 });
