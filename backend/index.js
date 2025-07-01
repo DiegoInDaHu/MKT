@@ -14,7 +14,8 @@ app.set('view engine', 'ejs');
 function initDb() {
   db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT UNIQUE, password TEXT)`);
-    db.run(`CREATE TABLE IF NOT EXISTS mikrotiks (id INTEGER PRIMARY KEY, nombre TEXT, cloud TEXT, modelo TEXT, ip_interna TEXT)`);
+    db.run(`CREATE TABLE IF NOT EXISTS mikrotiks (id INTEGER PRIMARY KEY, nombre TEXT, cloud TEXT, modelo TEXT, ip_interna TEXT, last_seen INTEGER)`);
+    db.run(`ALTER TABLE mikrotiks ADD COLUMN last_seen INTEGER`, () => {});
     db.get(`SELECT COUNT(*) as count FROM users WHERE username = ?`, ['admin'], (err, row) => {
       if (row.count === 0) {
         db.run(`INSERT INTO users (username, password) VALUES (?, ?)`, ['admin', 'admin']);
@@ -106,7 +107,12 @@ app.post('/users/delete/:id', checkAuth, (req, res) => {
 // List Mikrotik devices
 app.get('/mikrotiks', checkAuth, (req, res) => {
   db.all(`SELECT * FROM mikrotiks`, [], (err, rows) => {
-    res.render('mikrotiks', { username: req.session.username, mikrotiks: rows });
+    const now = Date.now();
+    const devices = rows.map(r => ({
+      ...r,
+      status: r.last_seen && (now - r.last_seen <= 10 * 60 * 1000) ? 'Online' : 'Offline'
+    }));
+    res.render('mikrotiks', { username: req.session.username, mikrotiks: devices });
   });
 });
 
@@ -122,8 +128,8 @@ app.get('/mikrotiks/edit/:id', checkAuth, (req, res) => {
 app.post('/mikrotiks/add', checkAuth, (req, res) => {
   const { nombre, cloud, modelo, ip_interna } = req.body;
   if (!nombre || !cloud || !modelo || !ip_interna) return res.redirect('/mikrotiks');
-  db.run(`INSERT INTO mikrotiks (nombre, cloud, modelo, ip_interna) VALUES (?, ?, ?, ?)`,
-    [nombre, cloud, modelo, ip_interna], () => {
+  db.run(`INSERT INTO mikrotiks (nombre, cloud, modelo, ip_interna, last_seen) VALUES (?, ?, ?, ?, ?)`,
+    [nombre, cloud, modelo, ip_interna, 0], () => {
       res.redirect('/mikrotiks');
     });
 });
@@ -148,6 +154,22 @@ app.get('/logout', (req, res) => {
   req.session.destroy(() => {
     res.redirect('/login');
   });
+});
+
+// Monitoring endpoint for Mikrotik heartbeats
+const monitorApp = express();
+monitorApp.get('/ping', (req, res) => {
+  const { cloud } = req.query;
+  if (!cloud) return res.status(400).send('missing cloud');
+  const now = Date.now();
+  db.run(`UPDATE mikrotiks SET last_seen = ? WHERE cloud = ?`, [now, cloud], function (err) {
+    if (err || this.changes === 0) return res.status(404).send('not found');
+    res.send('ok');
+  });
+});
+const MONITOR_PORT = process.env.MONITOR_PORT || 4000;
+monitorApp.listen(MONITOR_PORT, () => {
+  console.log(`Monitor escuchando en puerto ${MONITOR_PORT}`);
 });
 
 const PORT = process.env.PORT || 3000;
