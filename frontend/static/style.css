@@ -13,3 +13,15 @@ h1 {color: #333;}
 }
 #wrapper.toggled #sidebar-wrapper {margin-left: -250px;}
 #page-content-wrapper {flex: 1; padding: 20px;}
+
+/* Active link styling in sidebar */
+#sidebar-wrapper .list-group-item.active {
+  background-color: #e9ecef;
+  color: #212529;
+  border-color: #e9ecef;
+}
+
+/* Divider under sidebar title */
+.sidebar-heading {
+  border-bottom: 1px solid #dee2e6;
+}
