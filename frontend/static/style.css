@@ -3,6 +3,13 @@ h1 {color: #333;}
 
 /* Layout for sidebar navigation */
 #wrapper {display: flex; min-height: 100vh;}
-#sidebar-wrapper {min-width: 250px;}
+#sidebar-wrapper {
+  min-width: 250px;
+  width: 250px;
+  min-height: 100vh;
+}
+#sidebar-wrapper .list-group {
+  width: 100%;
+}
 #wrapper.toggled #sidebar-wrapper {margin-left: -250px;}
 #page-content-wrapper {flex: 1; padding: 20px;}
