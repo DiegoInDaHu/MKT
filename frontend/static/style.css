@@ -11,7 +11,20 @@ h1 {color: #333;}
 #sidebar-wrapper .list-group {
   width: 100%;
 }
-#wrapper.toggled #sidebar-wrapper {margin-left: -250px;}
+#wrapper.toggled #sidebar-wrapper {
+  width: 70px;
+  margin-left: 0;
+}
+#wrapper.toggled #sidebar-wrapper .sidebar-heading,
+#wrapper.toggled #sidebar-wrapper .list-group-item .link-text {
+  display: none;
+}
+#wrapper.toggled #sidebar-wrapper .list-group-item {
+  text-align: center;
+}
+#wrapper.toggled #sidebar-wrapper .list-group-item i {
+  margin-right: 0;
+}
 #page-content-wrapper {flex: 1; padding: 20px;}
 
 /* Active link styling in sidebar */

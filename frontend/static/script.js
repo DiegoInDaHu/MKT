@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('.datatable').forEach(function(el) {
     var options = {
       dom: '<"row mb-3 justify-content-end"<"col-auto"f><"col-auto ms-2"B>>rtip',
-      buttons: [{ extend: 'colvis', text: 'Columnas' }]
+      buttons: [{ extend: 'colvis', text: 'Columnas', columns: ':not(:last-child)' }]
     };
 
     if (el.id === 'usersTable') {
