@@ -7,4 +7,26 @@ document.addEventListener('DOMContentLoaded', function () {
       wrapper.classList.toggle('toggled');
     });
   }
+
+  var devicesContainer = document.getElementById('devices');
+  if (devicesContainer) {
+    function loadDevices() {
+      fetch('/api/mikrotiks')
+        .then(res => res.json())
+        .then(data => {
+          devicesContainer.innerHTML = '';
+          data.forEach(d => {
+            var col = document.createElement('div');
+            col.className = 'col-md-3 mb-3';
+            col.innerHTML = '<div class="card"><div class="card-body text-center">' +
+              '<h5 class="card-title">' + d.nombre + '</h5>' +
+              '<span class="' + (d.status === 'Online' ? 'text-success' : 'text-danger') + '">&#9679;</span>' +
+              '</div></div>';
+            devicesContainer.appendChild(col);
+          });
+        });
+    }
+    loadDevices();
+    setInterval(loadDevices, 5000);
+  }
 });

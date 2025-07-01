@@ -140,6 +140,23 @@ app.get('/mikrotiks', checkAuth, (req, res) => {
   });
 });
 
+// API endpoint returning Mikrotik status
+app.get('/api/mikrotiks', checkAuth, (req, res) => {
+  db.all(`SELECT * FROM mikrotiks`, [], (err, rows) => {
+    const now = Date.now();
+    const devices = rows.map(r => {
+      const timeout = r.offline_timeout || 5;
+      const limit = timeout * 60 * 1000 + statusOffset * 1000;
+      return {
+        id: r.id,
+        nombre: r.nombre,
+        status: r.last_seen && (now - r.last_seen <= limit) ? 'Online' : 'Offline'
+      };
+    });
+    res.json(devices);
+  });
+});
+
 // Render edit form for Mikrotik
 app.get('/mikrotiks/edit/:id', checkAuth, (req, res) => {
   db.get(`SELECT * FROM mikrotiks WHERE id = ?`, [req.params.id], (err, row) => {
@@ -186,6 +203,32 @@ app.get('/settings', checkAuth, (req, res) => {
       if (r.key === 'state_offset') offset = r.value;
     });
     res.render('settings', { username: req.session.username, port, offset });
+  });
+});
+
+// Update only monitor port
+app.post('/settings/port', checkAuth, (req, res) => {
+  const newPort = parseInt(req.body.port);
+  if (!newPort || newPort < 1 || newPort > 65535) {
+    return res.redirect('/settings');
+  }
+  db.run(`UPDATE settings SET value = ? WHERE key = ?`, [newPort, 'monitor_port'], () => {
+    if (newPort !== monitorPort) {
+      startMonitorServer(newPort);
+    }
+    res.redirect('/settings');
+  });
+});
+
+// Update only state offset
+app.post('/settings/offset', checkAuth, (req, res) => {
+  const newOffset = parseInt(req.body.state_offset);
+  if (isNaN(newOffset) || newOffset < 0) {
+    return res.redirect('/settings');
+  }
+  db.run(`UPDATE settings SET value = ? WHERE key = ?`, [newOffset, 'state_offset'], () => {
+    statusOffset = newOffset;
+    res.redirect('/settings');
   });
 });
 

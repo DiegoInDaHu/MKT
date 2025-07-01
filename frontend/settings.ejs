@@ -36,11 +36,16 @@
             </nav>
             <div class="container-fluid">
                 <h1 class="mt-4">Ajustes Globales</h1>
-                <form class="row g-3" action="/settings" method="post">
+                <form class="row g-3 mb-3" action="/settings/port" method="post">
                     <div class="col-md-4">
                         <label for="port" class="form-label">Puerto del servicio de escucha</label>
                         <input type="number" id="port" name="port" class="form-control" value="<%= port %>" min="1" max="65535" required>
                     </div>
+                    <div class="col-md-2 align-self-end">
+                        <button type="submit" class="btn btn-primary w-100">Guardar</button>
+                    </div>
+                </form>
+                <form class="row g-3" action="/settings/offset" method="post">
                     <div class="col-md-4">
                         <label for="state_offset" class="form-label">Desfase global (segundos)</label>
                         <input type="number" id="state_offset" name="state_offset" class="form-control" value="<%= offset %>" min="0" required>
