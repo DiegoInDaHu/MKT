@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Usuarios</title>
+    <title>Mikrotiks</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
@@ -13,8 +13,8 @@
             <div class="sidebar-heading p-3">MKT</div>
             <div class="list-group list-group-flush">
                 <a href="/dashboard" class="list-group-item list-group-item-action bg-light"><i class="fa-solid fa-gauge-high me-2"></i>Dashboard</a>
-                <a href="/users" class="list-group-item list-group-item-action active"><i class="fa-solid fa-users me-2"></i>Usuarios</a>
-                <a href="/mikrotiks" class="list-group-item list-group-item-action bg-light"><i class="fa-solid fa-network-wired me-2"></i>Mikrotiks</a>
+                <a href="/users" class="list-group-item list-group-item-action bg-light"><i class="fa-solid fa-users me-2"></i>Usuarios</a>
+                <a href="/mikrotiks" class="list-group-item list-group-item-action active"><i class="fa-solid fa-network-wired me-2"></i>Mikrotiks</a>
             </div>
         </div>
         <div id="page-content-wrapper">
@@ -34,13 +34,19 @@
                 </div>
             </nav>
             <div class="container-fluid">
-                <h1 class="mt-4">Gestión de Usuarios</h1>
-                <form class="row g-3 mb-4" action="/users/add" method="post">
-                    <div class="col-md-4">
-                        <input type="text" name="newUsername" class="form-control" placeholder="Usuario" required>
+                <h1 class="mt-4">Dispositivos Mikrotik</h1>
+                <form class="row g-3 mb-4" action="/mikrotiks/add" method="post">
+                    <div class="col-md-3">
+                        <input type="text" name="nombre" class="form-control" placeholder="Nombre" required>
                     </div>
-                    <div class="col-md-4">
-                        <input type="password" name="newPassword" class="form-control" placeholder="Contraseña" required>
+                    <div class="col-md-2">
+                        <input type="text" name="cloud" class="form-control" placeholder="Cloud" required>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" name="modelo" class="form-control" placeholder="Modelo" required>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" name="ip_interna" class="form-control" placeholder="IP Interna" required>
                     </div>
                     <div class="col-md-2">
                         <button type="submit" class="btn btn-success w-100">Añadir</button>
@@ -49,18 +55,24 @@
                 <table class="table table-striped">
                     <thead>
                         <tr>
-                            <th>Usuario</th>
+                            <th>Nombre</th>
+                            <th>Cloud</th>
+                            <th>Modelo</th>
+                            <th>IP Interna</th>
                             <th style="width: 150px"></th>
                         </tr>
                     </thead>
                     <tbody>
-                        <% users.forEach(u => { %>
+                        <% mikrotiks.forEach(m => { %>
                         <tr>
-                            <td><%= u.username %></td>
+                            <td><%= m.nombre %></td>
+                            <td><%= m.cloud %></td>
+                            <td><%= m.modelo %></td>
+                            <td><%= m.ip_interna %></td>
                             <td>
-                                <a href="/users/edit/<%= u.id %>" class="btn btn-sm btn-primary me-2">Editar</a>
-                                <form action="/users/delete/<%= u.id %>" method="post" style="display:inline-block">
-                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar usuario?')">Borrar</button>
+                                <a href="/mikrotiks/edit/<%= m.id %>" class="btn btn-sm btn-primary me-2">Editar</a>
+                                <form action="/mikrotiks/delete/<%= m.id %>" method="post" style="display:inline-block">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar dispositivo?')">Borrar</button>
                                 </form>
                             </td>
                         </tr>
