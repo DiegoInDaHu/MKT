@@ -63,6 +63,45 @@ app.get('/dashboard', checkAuth, (req, res) => {
   res.render('dashboard', { username: req.session.username });
 });
 
+// List all users
+app.get('/users', checkAuth, (req, res) => {
+  db.all(`SELECT id, username FROM users`, [], (err, rows) => {
+    res.render('users', { username: req.session.username, users: rows });
+  });
+});
+
+// Render edit form for a user
+app.get('/users/edit/:id', checkAuth, (req, res) => {
+  db.get(`SELECT id, username, password FROM users WHERE id = ?`, [req.params.id], (err, row) => {
+    if (!row) return res.redirect('/users');
+    res.render('editUser', { username: req.session.username, user: row });
+  });
+});
+
+// Add new user
+app.post('/users/add', checkAuth, (req, res) => {
+  const { newUsername, newPassword } = req.body;
+  if (!newUsername || !newPassword) return res.redirect('/users');
+  db.run(`INSERT INTO users (username, password) VALUES (?, ?)`, [newUsername, newPassword], () => {
+    res.redirect('/users');
+  });
+});
+
+// Update existing user
+app.post('/users/edit/:id', checkAuth, (req, res) => {
+  const { username: u, password: p } = req.body;
+  db.run(`UPDATE users SET username = ?, password = ? WHERE id = ?`, [u, p, req.params.id], () => {
+    res.redirect('/users');
+  });
+});
+
+// Delete user
+app.post('/users/delete/:id', checkAuth, (req, res) => {
+  db.run(`DELETE FROM users WHERE id = ?`, [req.params.id], () => {
+    res.redirect('/users');
+  });
+});
+
 app.get('/logout', (req, res) => {
   req.session.destroy(() => {
     res.redirect('/login');
