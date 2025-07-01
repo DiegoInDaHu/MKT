@@ -48,3 +48,8 @@ h1 {color: #333;}
   font-size: 2rem;
   line-height: 1;
 }
+
+/* Make dashboard cards width adapt to longest title */
+#devices .card-title {
+  white-space: nowrap;
+}
