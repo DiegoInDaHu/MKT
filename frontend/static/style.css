@@ -4,20 +4,24 @@ h1 {color: #333;}
 /* Layout for sidebar navigation */
 #wrapper {display: flex; min-height: 100vh;}
 #sidebar-wrapper {
-  min-width: 250px;
   width: 250px;
+  min-width: 250px;
   min-height: 100vh;
+  transition: width 0.3s ease;
 }
 #sidebar-wrapper .list-group {
   width: 100%;
 }
 #wrapper.toggled #sidebar-wrapper {
   width: 70px;
+  min-width: 70px;
   margin-left: 0;
 }
-#wrapper.toggled #sidebar-wrapper .sidebar-heading,
 #wrapper.toggled #sidebar-wrapper .list-group-item .link-text {
   display: none;
+}
+#wrapper.toggled #sidebar-wrapper .sidebar-heading {
+  text-align: center;
 }
 #wrapper.toggled #sidebar-wrapper .list-group-item {
   text-align: center;
