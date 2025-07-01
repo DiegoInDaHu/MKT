@@ -59,6 +59,7 @@
                             <th>Cloud</th>
                             <th>Modelo</th>
                             <th>IP Interna</th>
+                            <th>Estado</th>
                             <th style="width: 150px"></th>
                         </tr>
                     </thead>
@@ -69,6 +70,7 @@
                             <td><%= m.cloud %></td>
                             <td><%= m.modelo %></td>
                             <td><%= m.ip_interna %></td>
+                            <td><%= m.status %></td>
                             <td>
                                 <a href="/mikrotiks/edit/<%= m.id %>" class="btn btn-sm btn-primary me-2">Editar</a>
                                 <form action="/mikrotiks/delete/<%= m.id %>" method="post" style="display:inline-block">
