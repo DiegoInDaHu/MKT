@@ -49,6 +49,9 @@
                         <input type="text" name="ip_interna" class="form-control" value="<%= mikrotik.ip_interna %>" required>
                     </div>
                     <div class="col-md-2">
+                        <input type="number" name="offline_timeout" class="form-control" value="<%= mikrotik.offline_timeout || 5 %>" min="1" required>
+                    </div>
+                    <div class="col-md-2">
                         <button type="submit" class="btn btn-primary w-100">Guardar</button>
                     </div>
                     <div class="col-md-2">
