@@ -14,8 +14,9 @@ app.set('view engine', 'ejs');
 function initDb() {
   db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT UNIQUE, password TEXT)`);
-    db.run(`CREATE TABLE IF NOT EXISTS mikrotiks (id INTEGER PRIMARY KEY, nombre TEXT, cloud TEXT, modelo TEXT, ip_interna TEXT, last_seen INTEGER)`);
+    db.run(`CREATE TABLE IF NOT EXISTS mikrotiks (id INTEGER PRIMARY KEY, nombre TEXT, cloud TEXT, modelo TEXT, ip_interna TEXT, offline_timeout INTEGER DEFAULT 5, last_seen INTEGER)`);
     db.run(`ALTER TABLE mikrotiks ADD COLUMN last_seen INTEGER`, () => {});
+    db.run(`ALTER TABLE mikrotiks ADD COLUMN offline_timeout INTEGER DEFAULT 5`, () => {});
     db.get(`SELECT COUNT(*) as count FROM users WHERE username = ?`, ['admin'], (err, row) => {
       if (row.count === 0) {
         db.run(`INSERT INTO users (username, password) VALUES (?, ?)`, ['admin', 'admin']);
@@ -108,10 +109,13 @@ app.post('/users/delete/:id', checkAuth, (req, res) => {
 app.get('/mikrotiks', checkAuth, (req, res) => {
   db.all(`SELECT * FROM mikrotiks`, [], (err, rows) => {
     const now = Date.now();
-    const devices = rows.map(r => ({
-      ...r,
-      status: r.last_seen && (now - r.last_seen <= 10 * 60 * 1000) ? 'Online' : 'Offline'
-    }));
+    const devices = rows.map(r => {
+      const timeout = r.offline_timeout || 5;
+      return {
+        ...r,
+        status: r.last_seen && (now - r.last_seen <= timeout * 60 * 1000) ? 'Online' : 'Offline'
+      };
+    });
     res.render('mikrotiks', { username: req.session.username, mikrotiks: devices });
   });
 });
@@ -126,19 +130,21 @@ app.get('/mikrotiks/edit/:id', checkAuth, (req, res) => {
 
 // Add Mikrotik
 app.post('/mikrotiks/add', checkAuth, (req, res) => {
-  const { nombre, cloud, modelo, ip_interna } = req.body;
+  const { nombre, cloud, modelo, ip_interna, offline_timeout } = req.body;
   if (!nombre || !cloud || !modelo || !ip_interna) return res.redirect('/mikrotiks');
-  db.run(`INSERT INTO mikrotiks (nombre, cloud, modelo, ip_interna, last_seen) VALUES (?, ?, ?, ?, ?)`,
-    [nombre, cloud, modelo, ip_interna, 0], () => {
+  const timeout = parseInt(offline_timeout) || 5;
+  db.run(`INSERT INTO mikrotiks (nombre, cloud, modelo, ip_interna, offline_timeout, last_seen) VALUES (?, ?, ?, ?, ?, ?)`,
+    [nombre, cloud, modelo, ip_interna, timeout, 0], () => {
       res.redirect('/mikrotiks');
     });
 });
 
 // Update Mikrotik
 app.post('/mikrotiks/edit/:id', checkAuth, (req, res) => {
-  const { nombre, cloud, modelo, ip_interna } = req.body;
-  db.run(`UPDATE mikrotiks SET nombre = ?, cloud = ?, modelo = ?, ip_interna = ? WHERE id = ?`,
-    [nombre, cloud, modelo, ip_interna, req.params.id], () => {
+  const { nombre, cloud, modelo, ip_interna, offline_timeout } = req.body;
+  const timeout = parseInt(offline_timeout) || 5;
+  db.run(`UPDATE mikrotiks SET nombre = ?, cloud = ?, modelo = ?, ip_interna = ?, offline_timeout = ? WHERE id = ?`,
+    [nombre, cloud, modelo, ip_interna, timeout, req.params.id], () => {
       res.redirect('/mikrotiks');
     });
 });
