@@ -44,9 +44,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  if (document.getElementById('mikrotiksTable')) {
-    var table = new DataTable('#mikrotiksTable', {
-      dom: 'Bfrtip',
+  document.querySelectorAll('.datatable').forEach(function(el) {
+    new DataTable(el, {
+      dom: '<"row mb-3"<"col-sm-12 col-md-6"f><"col-sm-12 col-md-6 text-end"B>>rtip',
       buttons: [
         {
           extend: 'colvis',
@@ -54,5 +54,5 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       ]
     });
-  }
+  });
 });
