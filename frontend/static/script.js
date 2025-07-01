@@ -43,4 +43,16 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     });
   }
+
+  if (document.getElementById('mikrotiksTable')) {
+    var table = new DataTable('#mikrotiksTable', {
+      dom: 'Bfrtip',
+      buttons: [
+        {
+          extend: 'colvis',
+          text: 'Columnas'
+        }
+      ]
+    });
+  }
 });
