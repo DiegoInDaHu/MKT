@@ -8,6 +8,7 @@ const app = express();
 const db = new sqlite3.Database(path.join(__dirname, 'db.sqlite'));
 let monitorServer;
 let monitorPort = process.env.MONITOR_PORT || 4000;
+let statusOffset = 0;
 
 app.set('views', path.join(__dirname, '../frontend'));
 app.set('view engine', 'ejs');
@@ -26,12 +27,19 @@ function initDb(cb) {
       }
     });
     const defaultPort = process.env.MONITOR_PORT || 4000;
+    const defaultOffset = 0;
     db.get(`SELECT value FROM settings WHERE key = ?`, ['monitor_port'], (err, row) => {
+      const port = row ? parseInt(row.value) || defaultPort : defaultPort;
       if (!row) {
-        db.run(`INSERT INTO settings (key, value) VALUES (?, ?)`, ['monitor_port', defaultPort], () => cb(defaultPort));
-      } else {
-        cb(parseInt(row.value) || defaultPort);
+        db.run(`INSERT INTO settings (key, value) VALUES (?, ?)`, ['monitor_port', defaultPort]);
       }
+      db.get(`SELECT value FROM settings WHERE key = ?`, ['state_offset'], (e2, r2) => {
+        statusOffset = r2 ? parseInt(r2.value) || defaultOffset : defaultOffset;
+        if (!r2) {
+          db.run(`INSERT INTO settings (key, value) VALUES (?, ?)`, ['state_offset', defaultOffset]);
+        }
+        cb(port);
+      });
     });
   });
 }
@@ -122,9 +130,10 @@ app.get('/mikrotiks', checkAuth, (req, res) => {
     const now = Date.now();
     const devices = rows.map(r => {
       const timeout = r.offline_timeout || 5;
+      const limit = timeout * 60 * 1000 + statusOffset * 1000;
       return {
         ...r,
-        status: r.last_seen && (now - r.last_seen <= timeout * 60 * 1000) ? 'Online' : 'Offline'
+        status: r.last_seen && (now - r.last_seen <= limit) ? 'Online' : 'Offline'
       };
     });
     res.render('mikrotiks', { username: req.session.username, mikrotiks: devices });
@@ -169,21 +178,33 @@ app.post('/mikrotiks/delete/:id', checkAuth, (req, res) => {
 
 // Settings view
 app.get('/settings', checkAuth, (req, res) => {
-  db.get(`SELECT value FROM settings WHERE key = ?`, ['monitor_port'], (err, row) => {
-    const port = row ? row.value : monitorPort;
-    res.render('settings', { username: req.session.username, port });
+  db.all(`SELECT key, value FROM settings WHERE key IN ('monitor_port','state_offset')`, (err, rows) => {
+    let port = monitorPort;
+    let offset = statusOffset;
+    rows.forEach(r => {
+      if (r.key === 'monitor_port') port = r.value;
+      if (r.key === 'state_offset') offset = r.value;
+    });
+    res.render('settings', { username: req.session.username, port, offset });
   });
 });
 
 // Update settings
 app.post('/settings', checkAuth, (req, res) => {
   const newPort = parseInt(req.body.port);
-  if (!newPort) return res.redirect('/settings');
-  db.run(`UPDATE settings SET value = ? WHERE key = ?`, [newPort, 'monitor_port'], () => {
-    if (newPort !== monitorPort) {
-      startMonitorServer(newPort);
-    }
-    res.redirect('/settings');
+  const newOffset = parseInt(req.body.state_offset);
+  if (!newPort || newPort < 1 || newPort > 65535 || isNaN(newOffset) || newOffset < 0) {
+    return res.redirect('/settings');
+  }
+  db.serialize(() => {
+    db.run(`UPDATE settings SET value = ? WHERE key = ?`, [newPort, 'monitor_port']);
+    db.run(`UPDATE settings SET value = ? WHERE key = ?`, [newOffset, 'state_offset'], () => {
+      if (newPort !== monitorPort) {
+        startMonitorServer(newPort);
+      }
+      statusOffset = newOffset;
+      res.redirect('/settings');
+    });
   });
 });
 
