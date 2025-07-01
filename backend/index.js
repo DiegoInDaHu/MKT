@@ -14,6 +14,7 @@ app.set('view engine', 'ejs');
 function initDb() {
   db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT UNIQUE, password TEXT)`);
+    db.run(`CREATE TABLE IF NOT EXISTS mikrotiks (id INTEGER PRIMARY KEY, nombre TEXT, cloud TEXT, modelo TEXT, ip_interna TEXT)`);
     db.get(`SELECT COUNT(*) as count FROM users WHERE username = ?`, ['admin'], (err, row) => {
       if (row.count === 0) {
         db.run(`INSERT INTO users (username, password) VALUES (?, ?)`, ['admin', 'admin']);
@@ -99,6 +100,47 @@ app.post('/users/edit/:id', checkAuth, (req, res) => {
 app.post('/users/delete/:id', checkAuth, (req, res) => {
   db.run(`DELETE FROM users WHERE id = ?`, [req.params.id], () => {
     res.redirect('/users');
+  });
+});
+
+// List Mikrotik devices
+app.get('/mikrotiks', checkAuth, (req, res) => {
+  db.all(`SELECT * FROM mikrotiks`, [], (err, rows) => {
+    res.render('mikrotiks', { username: req.session.username, mikrotiks: rows });
+  });
+});
+
+// Render edit form for Mikrotik
+app.get('/mikrotiks/edit/:id', checkAuth, (req, res) => {
+  db.get(`SELECT * FROM mikrotiks WHERE id = ?`, [req.params.id], (err, row) => {
+    if (!row) return res.redirect('/mikrotiks');
+    res.render('editMikrotik', { username: req.session.username, mikrotik: row });
+  });
+});
+
+// Add Mikrotik
+app.post('/mikrotiks/add', checkAuth, (req, res) => {
+  const { nombre, cloud, modelo, ip_interna } = req.body;
+  if (!nombre || !cloud || !modelo || !ip_interna) return res.redirect('/mikrotiks');
+  db.run(`INSERT INTO mikrotiks (nombre, cloud, modelo, ip_interna) VALUES (?, ?, ?, ?)`,
+    [nombre, cloud, modelo, ip_interna], () => {
+      res.redirect('/mikrotiks');
+    });
+});
+
+// Update Mikrotik
+app.post('/mikrotiks/edit/:id', checkAuth, (req, res) => {
+  const { nombre, cloud, modelo, ip_interna } = req.body;
+  db.run(`UPDATE mikrotiks SET nombre = ?, cloud = ?, modelo = ?, ip_interna = ? WHERE id = ?`,
+    [nombre, cloud, modelo, ip_interna, req.params.id], () => {
+      res.redirect('/mikrotiks');
+    });
+});
+
+// Delete Mikrotik
+app.post('/mikrotiks/delete/:id', checkAuth, (req, res) => {
+  db.run(`DELETE FROM mikrotiks WHERE id = ?`, [req.params.id], () => {
+    res.redirect('/mikrotiks');
   });
 });
 
