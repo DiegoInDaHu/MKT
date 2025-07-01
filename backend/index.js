@@ -6,26 +6,37 @@ const SQLiteStore = require('connect-sqlite3')(session);
 
 const app = express();
 const db = new sqlite3.Database(path.join(__dirname, 'db.sqlite'));
+let monitorServer;
+let monitorPort = process.env.MONITOR_PORT || 4000;
 
 app.set('views', path.join(__dirname, '../frontend'));
 app.set('view engine', 'ejs');
 
 // Ensure users table and default user
-function initDb() {
+function initDb(cb) {
   db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT UNIQUE, password TEXT)`);
     db.run(`CREATE TABLE IF NOT EXISTS mikrotiks (id INTEGER PRIMARY KEY, nombre TEXT, cloud TEXT, modelo TEXT, ip_interna TEXT, offline_timeout INTEGER DEFAULT 5, last_seen INTEGER)`);
     db.run(`ALTER TABLE mikrotiks ADD COLUMN last_seen INTEGER`, () => {});
     db.run(`ALTER TABLE mikrotiks ADD COLUMN offline_timeout INTEGER DEFAULT 5`, () => {});
+    db.run(`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)`);
     db.get(`SELECT COUNT(*) as count FROM users WHERE username = ?`, ['admin'], (err, row) => {
       if (row.count === 0) {
         db.run(`INSERT INTO users (username, password) VALUES (?, ?)`, ['admin', 'admin']);
       }
     });
+    const defaultPort = process.env.MONITOR_PORT || 4000;
+    db.get(`SELECT value FROM settings WHERE key = ?`, ['monitor_port'], (err, row) => {
+      if (!row) {
+        db.run(`INSERT INTO settings (key, value) VALUES (?, ?)`, ['monitor_port', defaultPort], () => cb(defaultPort));
+      } else {
+        cb(parseInt(row.value) || defaultPort);
+      }
+    });
   });
 }
 
-initDb();
+initDb(port => startMonitorServer(port));
 
 app.use(express.urlencoded({ extended: true }));
 app.use('/static', express.static(path.join(__dirname, '../frontend/static')));
@@ -156,6 +167,26 @@ app.post('/mikrotiks/delete/:id', checkAuth, (req, res) => {
   });
 });
 
+// Settings view
+app.get('/settings', checkAuth, (req, res) => {
+  db.get(`SELECT value FROM settings WHERE key = ?`, ['monitor_port'], (err, row) => {
+    const port = row ? row.value : monitorPort;
+    res.render('settings', { username: req.session.username, port });
+  });
+});
+
+// Update settings
+app.post('/settings', checkAuth, (req, res) => {
+  const newPort = parseInt(req.body.port);
+  if (!newPort) return res.redirect('/settings');
+  db.run(`UPDATE settings SET value = ? WHERE key = ?`, [newPort, 'monitor_port'], () => {
+    if (newPort !== monitorPort) {
+      startMonitorServer(newPort);
+    }
+    res.redirect('/settings');
+  });
+});
+
 app.get('/logout', (req, res) => {
   req.session.destroy(() => {
     res.redirect('/login');
@@ -173,10 +204,16 @@ monitorApp.get('/ping', (req, res) => {
     res.send('ok');
   });
 });
-const MONITOR_PORT = process.env.MONITOR_PORT || 4000;
-monitorApp.listen(MONITOR_PORT, () => {
-  console.log(`Monitor escuchando en puerto ${MONITOR_PORT}`);
-});
+
+function startMonitorServer(port) {
+  if (monitorServer) {
+    monitorServer.close();
+  }
+  monitorPort = port;
+  monitorServer = monitorApp.listen(port, () => {
+    console.log(`Monitor escuchando en puerto ${port}`);
+  });
+}
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
