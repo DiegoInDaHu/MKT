@@ -16,6 +16,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var devicesContainer = document.getElementById('devices');
   if (devicesContainer) {
+    function adjustCardWidths() {
+      var cards = devicesContainer.querySelectorAll('.card');
+      if (cards.length === 0) return;
+      var maxWidth = 0;
+      cards.forEach(function(card) {
+        maxWidth = Math.max(maxWidth, card.offsetWidth);
+      });
+      cards.forEach(function(card) {
+        card.style.minWidth = maxWidth + 'px';
+      });
+    }
+
     function loadDevices() {
       fetch('/api/mikrotiks')
         .then(res => res.json())
@@ -23,13 +35,14 @@ document.addEventListener('DOMContentLoaded', function () {
           devicesContainer.innerHTML = '';
           data.forEach(d => {
             var col = document.createElement('div');
-            col.className = 'col-md-3 mb-3';
+            col.className = 'col-auto mb-3';
             col.innerHTML = '<div class="card"><div class="card-body text-center">' +
               '<h5 class="card-title">' + d.nombre + '</h5>' +
               '<span class="status-dot ' + (d.status === 'Online' ? 'text-success' : 'text-danger') + '">&#9679;</span>' +
               '</div></div>';
             devicesContainer.appendChild(col);
           });
+          adjustCardWidths();
         });
     }
     loadDevices();
