@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function () {
             col.className = 'col-md-3 mb-3';
             col.innerHTML = '<div class="card"><div class="card-body text-center">' +
               '<h5 class="card-title">' + d.nombre + '</h5>' +
-              '<span class="' + (d.status === 'Online' ? 'text-success' : 'text-danger') + '">&#9679;</span>' +
+              '<span class="status-dot ' + (d.status === 'Online' ? 'text-success' : 'text-danger') + '">&#9679;</span>' +
               '</div></div>';
             devicesContainer.appendChild(col);
           });
@@ -28,5 +28,19 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     loadDevices();
     setInterval(loadDevices, 5000);
+  }
+
+  var visibleToggles = document.querySelectorAll('.visible-toggle');
+  if (visibleToggles.length > 0) {
+    visibleToggles.forEach(function(cb) {
+      cb.addEventListener('change', function() {
+        var id = this.getAttribute('data-id');
+        fetch('/mikrotiks/' + id + '/visible', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'visible=' + (this.checked ? '1' : '0')
+        });
+      });
+    });
   }
 });
