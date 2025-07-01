@@ -65,6 +65,7 @@
                             <th>IP Interna</th>
                             <th>Timeout (min)</th>
                             <th>Estado</th>
+                            <th>Visible</th>
                             <th style="width: 150px"></th>
                         </tr>
                     </thead>
@@ -77,8 +78,11 @@
                             <td><%= m.ip_interna %></td>
                             <td><%= m.offline_timeout || 5 %></td>
                             <td>
-                                <span class="<%= m.status === 'Online' ? 'text-success' : 'text-danger' %>">&#9679;</span>
+                                <span class="status-dot <%= m.status === 'Online' ? 'text-success' : 'text-danger' %>">&#9679;</span>
                                 <%= m.status %>
+                            </td>
+                            <td>
+                                <input type="checkbox" class="form-check-input visible-toggle" data-id="<%= m.id %>" <%= m.visible ? 'checked' : '' %>>
                             </td>
                             <td>
                                 <a href="/mikrotiks/edit/<%= m.id %>" class="btn btn-sm btn-primary me-2">Editar</a>

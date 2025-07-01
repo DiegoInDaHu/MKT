@@ -25,3 +25,9 @@ h1 {color: #333;}
 .sidebar-heading {
   border-bottom: 1px solid #dee2e6;
 }
+
+/* Bigger status indicator dots */
+.status-dot {
+  font-size: 2rem;
+  line-height: 1;
+}

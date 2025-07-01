@@ -17,9 +17,10 @@ app.set('view engine', 'ejs');
 function initDb(cb) {
   db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT UNIQUE, password TEXT)`);
-    db.run(`CREATE TABLE IF NOT EXISTS mikrotiks (id INTEGER PRIMARY KEY, nombre TEXT, cloud TEXT, modelo TEXT, ip_interna TEXT, offline_timeout INTEGER DEFAULT 5, last_seen INTEGER)`);
+    db.run(`CREATE TABLE IF NOT EXISTS mikrotiks (id INTEGER PRIMARY KEY, nombre TEXT, cloud TEXT, modelo TEXT, ip_interna TEXT, offline_timeout INTEGER DEFAULT 5, last_seen INTEGER, visible INTEGER DEFAULT 1)`);
     db.run(`ALTER TABLE mikrotiks ADD COLUMN last_seen INTEGER`, () => {});
     db.run(`ALTER TABLE mikrotiks ADD COLUMN offline_timeout INTEGER DEFAULT 5`, () => {});
+    db.run(`ALTER TABLE mikrotiks ADD COLUMN visible INTEGER DEFAULT 1`, () => {});
     db.run(`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)`);
     db.get(`SELECT COUNT(*) as count FROM users WHERE username = ?`, ['admin'], (err, row) => {
       if (row.count === 0) {
@@ -142,7 +143,7 @@ app.get('/mikrotiks', checkAuth, (req, res) => {
 
 // API endpoint returning Mikrotik status
 app.get('/api/mikrotiks', checkAuth, (req, res) => {
-  db.all(`SELECT * FROM mikrotiks`, [], (err, rows) => {
+  db.all(`SELECT * FROM mikrotiks WHERE visible = 1`, [], (err, rows) => {
     const now = Date.now();
     const devices = rows.map(r => {
       const timeout = r.offline_timeout || 5;
@@ -170,7 +171,7 @@ app.post('/mikrotiks/add', checkAuth, (req, res) => {
   const { nombre, cloud, modelo, ip_interna, offline_timeout } = req.body;
   if (!nombre || !cloud || !modelo || !ip_interna) return res.redirect('/mikrotiks');
   const timeout = parseInt(offline_timeout) || 5;
-  db.run(`INSERT INTO mikrotiks (nombre, cloud, modelo, ip_interna, offline_timeout, last_seen) VALUES (?, ?, ?, ?, ?, ?)`,
+  db.run(`INSERT INTO mikrotiks (nombre, cloud, modelo, ip_interna, offline_timeout, last_seen, visible) VALUES (?, ?, ?, ?, ?, ?, 1)`,
     [nombre, cloud, modelo, ip_interna, timeout, 0], () => {
       res.redirect('/mikrotiks');
     });
@@ -184,6 +185,14 @@ app.post('/mikrotiks/edit/:id', checkAuth, (req, res) => {
     [nombre, cloud, modelo, ip_interna, timeout, req.params.id], () => {
       res.redirect('/mikrotiks');
     });
+});
+
+// Toggle Mikrotik visibility
+app.post('/mikrotiks/:id/visible', checkAuth, (req, res) => {
+  const visible = req.body.visible === '1' ? 1 : 0;
+  db.run(`UPDATE mikrotiks SET visible = ? WHERE id = ?`, [visible, req.params.id], () => {
+    res.sendStatus(200);
+  });
 });
 
 // Delete Mikrotik
