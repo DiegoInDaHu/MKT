@@ -1,16 +1,27 @@
 document.addEventListener('DOMContentLoaded', function () {
   var menuToggle = document.getElementById('menu-toggle');
   var wrapper = document.getElementById('wrapper');
-  if (wrapper) {
+  var sidebar = document.getElementById('sidebar-wrapper');
+
+  if (wrapper && sidebar) {
     if (localStorage.getItem('sidebar-collapsed') === 'true') {
       wrapper.classList.add('toggled');
+      sidebar.classList.add('no-transition');
     }
+    // Remove the class on the next frame so button toggles animate
+    requestAnimationFrame(function () {
+      sidebar.classList.remove('no-transition');
+    });
   }
+
   if (menuToggle && wrapper) {
     menuToggle.addEventListener('click', function (e) {
       e.preventDefault();
       wrapper.classList.toggle('toggled');
-      localStorage.setItem('sidebar-collapsed', wrapper.classList.contains('toggled'));
+      localStorage.setItem(
+        'sidebar-collapsed',
+        wrapper.classList.contains('toggled')
+      );
     });
   }
 
