@@ -9,6 +9,11 @@ h1 {color: #333;}
   min-height: 100vh;
   transition: width 0.3s ease;
 }
+
+/* Disable transitions when toggling state is restored on page load */
+#sidebar-wrapper.no-transition {
+  transition: none;
+}
 #sidebar-wrapper .list-group {
   width: 100%;
 }
