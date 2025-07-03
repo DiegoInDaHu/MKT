@@ -34,7 +34,10 @@ h1 {color: #333;}
 #wrapper.toggled #sidebar-wrapper .list-group-item i {
   margin-right: 0;
 }
-#page-content-wrapper {flex: 1; padding: 20px;}
+#page-content-wrapper {flex: 1;}
+
+#menu-toggle {margin-left: 10px;}
+#userDropdown {margin-right: 10px;}
 
 /* Active link styling in sidebar */
 #sidebar-wrapper .list-group-item.active {
