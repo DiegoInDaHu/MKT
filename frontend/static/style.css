@@ -7,7 +7,7 @@ h1 {color: #333;}
   width: 250px;
   min-width: 250px;
   min-height: 100vh;
-  transition: width 0.3s ease;
+  transition: width 0.3s ease, min-width 0.3s ease;
 }
 
 /* Disable transitions when toggling state is restored on page load */
@@ -36,7 +36,15 @@ h1 {color: #333;}
 }
 #page-content-wrapper {flex: 1;}
 
-#menu-toggle {margin-left: 10px;}
+#menu-toggle {
+  margin-left: 10px;
+  background-color: #55d4fa;
+  border-color: #55d4fa;
+}
+#menu-toggle:hover {
+  background-color: #55d4fa;
+  border-color: #55d4fa;
+}
 #userDropdown {margin-right: 10px;}
 
 /* Active link styling in sidebar */
