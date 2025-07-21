@@ -3,12 +3,17 @@ const express = require('express');
 const session = require('express-session');
 const sqlite3 = require('sqlite3').verbose();
 const SQLiteStore = require('connect-sqlite3')(session);
+const fs = require('fs');
+const https = require('https');
+const crypto = require('crypto');
 
 const app = express();
 const db = new sqlite3.Database(path.join(__dirname, 'db.sqlite'));
 let monitorServer;
 let monitorPort = process.env.MONITOR_PORT || 4000;
 let statusOffset = 0;
+const SSL_CERT = process.env.SSL_CERT || path.join(__dirname, 'ssl/cert.pem');
+const SSL_KEY = process.env.SSL_KEY || path.join(__dirname, 'ssl/key.pem');
 
 app.set('views', path.join(__dirname, '../frontend'));
 app.set('view engine', 'ejs');
@@ -17,10 +22,11 @@ app.set('view engine', 'ejs');
 function initDb(cb) {
   db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT UNIQUE, password TEXT)`);
-    db.run(`CREATE TABLE IF NOT EXISTS mikrotiks (id INTEGER PRIMARY KEY, nombre TEXT, cloud TEXT, modelo TEXT, ip_interna TEXT, offline_timeout INTEGER DEFAULT 5, last_seen INTEGER, visible INTEGER DEFAULT 1)`);
+    db.run(`CREATE TABLE IF NOT EXISTS mikrotiks (id INTEGER PRIMARY KEY, nombre TEXT, cloud TEXT, token TEXT, modelo TEXT, ip_interna TEXT, offline_timeout INTEGER DEFAULT 5, last_seen INTEGER, visible INTEGER DEFAULT 1)`);
     db.run(`ALTER TABLE mikrotiks ADD COLUMN last_seen INTEGER`, () => {});
     db.run(`ALTER TABLE mikrotiks ADD COLUMN offline_timeout INTEGER DEFAULT 5`, () => {});
     db.run(`ALTER TABLE mikrotiks ADD COLUMN visible INTEGER DEFAULT 1`, () => {});
+    db.run(`ALTER TABLE mikrotiks ADD COLUMN token TEXT`, () => {});
     db.run(`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)`);
     db.get(`SELECT COUNT(*) as count FROM users WHERE username = ?`, ['admin'], (err, row) => {
       if (row.count === 0) {
@@ -168,21 +174,21 @@ app.get('/mikrotiks/edit/:id', checkAuth, (req, res) => {
 
 // Add Mikrotik
 app.post('/mikrotiks/add', checkAuth, (req, res) => {
-  const { nombre, cloud, modelo, ip_interna, offline_timeout } = req.body;
-  if (!nombre || !cloud || !modelo || !ip_interna) return res.redirect('/mikrotiks');
+  const { nombre, cloud, modelo, ip_interna, offline_timeout, token } = req.body;
+  if (!nombre || !cloud || !modelo || !ip_interna || !token) return res.redirect('/mikrotiks');
   const timeout = parseInt(offline_timeout) || 5;
-  db.run(`INSERT INTO mikrotiks (nombre, cloud, modelo, ip_interna, offline_timeout, last_seen, visible) VALUES (?, ?, ?, ?, ?, ?, 1)`,
-    [nombre, cloud, modelo, ip_interna, timeout, 0], () => {
+  db.run(`INSERT INTO mikrotiks (nombre, cloud, token, modelo, ip_interna, offline_timeout, last_seen, visible) VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
+    [nombre, cloud, token, modelo, ip_interna, timeout, 0], () => {
       res.redirect('/mikrotiks');
     });
 });
 
 // Update Mikrotik
 app.post('/mikrotiks/edit/:id', checkAuth, (req, res) => {
-  const { nombre, cloud, modelo, ip_interna, offline_timeout } = req.body;
+  const { nombre, cloud, modelo, ip_interna, offline_timeout, token } = req.body;
   const timeout = parseInt(offline_timeout) || 5;
-  db.run(`UPDATE mikrotiks SET nombre = ?, cloud = ?, modelo = ?, ip_interna = ?, offline_timeout = ? WHERE id = ?`,
-    [nombre, cloud, modelo, ip_interna, timeout, req.params.id], () => {
+  db.run(`UPDATE mikrotiks SET nombre = ?, cloud = ?, token = ?, modelo = ?, ip_interna = ?, offline_timeout = ? WHERE id = ?`,
+    [nombre, cloud, token, modelo, ip_interna, timeout, req.params.id], () => {
       res.redirect('/mikrotiks');
     });
 });
@@ -269,10 +275,10 @@ app.get('/logout', (req, res) => {
 // Monitoring endpoint for Mikrotik heartbeats
 const monitorApp = express();
 monitorApp.get('/ping', (req, res) => {
-  const { cloud } = req.query;
-  if (!cloud) return res.status(400).send('missing cloud');
+  const { cloud, token } = req.query;
+  if (!cloud || !token) return res.status(400).send('missing params');
   const now = Date.now();
-  db.run(`UPDATE mikrotiks SET last_seen = ? WHERE cloud = ?`, [now, cloud], function (err) {
+  db.run(`UPDATE mikrotiks SET last_seen = ? WHERE cloud = ? AND token = ?`, [now, cloud, token], function (err) {
     if (err || this.changes === 0) return res.status(404).send('not found');
     res.send('ok');
   });
@@ -283,8 +289,12 @@ function startMonitorServer(port) {
     monitorServer.close();
   }
   monitorPort = port;
-  monitorServer = monitorApp.listen(port, () => {
-    console.log(`Monitor escuchando en puerto ${port}`);
+  const options = {
+    cert: fs.readFileSync(SSL_CERT),
+    key: fs.readFileSync(SSL_KEY)
+  };
+  monitorServer = https.createServer(options, monitorApp).listen(port, () => {
+    console.log(`Monitor HTTPS escuchando en puerto ${port}`);
   });
 }
 
