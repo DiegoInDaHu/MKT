@@ -65,6 +65,11 @@ function checkAuth(req, res, next) {
   }
 }
 
+// Default route redirects to the login page
+app.get('/', (req, res) => {
+  res.redirect('/login');
+});
+
 app.get('/login', (req, res) => {
   res.render('login');
 });
