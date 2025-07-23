@@ -23,6 +23,16 @@ function initDb(cb) {
     db.run(`ALTER TABLE mikrotiks ADD COLUMN offline_timeout INTEGER DEFAULT 5`, () => {});
     db.run(`ALTER TABLE mikrotiks ADD COLUMN visible INTEGER DEFAULT 1`, () => {});
     db.run(`ALTER TABLE mikrotiks ADD COLUMN token TEXT`, () => {});
+
+    // Ensure every Mikrotik has a token generated
+    db.all(`SELECT id FROM mikrotiks WHERE token IS NULL OR token = ''`, [], (err, rows) => {
+      if (!err && rows && rows.length) {
+        rows.forEach(row => {
+          const tk = crypto.randomBytes(16).toString('hex');
+          db.run(`UPDATE mikrotiks SET token = ? WHERE id = ?`, [tk, row.id]);
+        });
+      }
+    });
     db.run(`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)`);
     db.get(`SELECT COUNT(*) as count FROM users WHERE username = ?`, ['admin'], (err, row) => {
       if (row.count === 0) {
