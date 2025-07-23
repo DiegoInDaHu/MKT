@@ -4,7 +4,7 @@
   "description": "Programa en entorno web para monitorizar dispositivos Mikrotik. Incluye un login sencillo y un dashboard de ejemplo.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"No tests defined\""
   },
   "keywords": [],
   "author": "",
