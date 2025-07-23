@@ -86,6 +86,7 @@
                             <th>Cloud</th>
                             <th>Modelo</th>
                             <th>IP Interna</th>
+                            <th>Token</th>
                             <th>Timeout (min)</th>
                             <th>Estado</th>
                             <th style="width: 150px"></th>
@@ -101,6 +102,7 @@
                             <td><%= m.cloud %></td>
                             <td><%= m.modelo %></td>
                             <td><%= m.ip_interna %></td>
+                            <td><code><%= m.token %></code></td>
                             <td><%= m.offline_timeout || 5 %></td>
                             <td>
                                 <span class="status-dot <%= m.status === 'Online' ? 'text-success' : 'text-danger' %>">&#9679;</span>

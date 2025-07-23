@@ -3,6 +3,7 @@ const express = require('express');
 const session = require('express-session');
 const sqlite3 = require('sqlite3').verbose();
 const SQLiteStore = require('connect-sqlite3')(session);
+const crypto = require('crypto');
 
 const app = express();
 const db = new sqlite3.Database(path.join(__dirname, 'db.sqlite'));
@@ -17,10 +18,11 @@ app.set('view engine', 'ejs');
 function initDb(cb) {
   db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT UNIQUE, password TEXT)`);
-    db.run(`CREATE TABLE IF NOT EXISTS mikrotiks (id INTEGER PRIMARY KEY, nombre TEXT, cloud TEXT, modelo TEXT, ip_interna TEXT, offline_timeout INTEGER DEFAULT 5, last_seen INTEGER, visible INTEGER DEFAULT 1)`);
+    db.run(`CREATE TABLE IF NOT EXISTS mikrotiks (id INTEGER PRIMARY KEY, nombre TEXT, cloud TEXT, modelo TEXT, ip_interna TEXT, token TEXT, offline_timeout INTEGER DEFAULT 5, last_seen INTEGER, visible INTEGER DEFAULT 1)`);
     db.run(`ALTER TABLE mikrotiks ADD COLUMN last_seen INTEGER`, () => {});
     db.run(`ALTER TABLE mikrotiks ADD COLUMN offline_timeout INTEGER DEFAULT 5`, () => {});
     db.run(`ALTER TABLE mikrotiks ADD COLUMN visible INTEGER DEFAULT 1`, () => {});
+    db.run(`ALTER TABLE mikrotiks ADD COLUMN token TEXT`, () => {});
     db.run(`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)`);
     db.get(`SELECT COUNT(*) as count FROM users WHERE username = ?`, ['admin'], (err, row) => {
       if (row.count === 0) {
@@ -63,6 +65,18 @@ function checkAuth(req, res, next) {
   } else {
     res.redirect('/login');
   }
+}
+
+function verifyDeviceToken(req, res, next) {
+  const token = req.get('x-device-token');
+  const { cloud } = req.query;
+  if (!token || !cloud) return res.status(401).send('unauthorized');
+  db.get(`SELECT token FROM mikrotiks WHERE cloud = ?`, [cloud], (err, row) => {
+    if (err || !row || row.token !== token) {
+      return res.status(401).send('unauthorized');
+    }
+    next();
+  });
 }
 
 // Default route redirects to the login page
@@ -176,8 +190,9 @@ app.post('/mikrotiks/add', checkAuth, (req, res) => {
   const { nombre, cloud, modelo, ip_interna, offline_timeout } = req.body;
   if (!nombre || !cloud || !modelo || !ip_interna) return res.redirect('/mikrotiks');
   const timeout = parseInt(offline_timeout) || 5;
-  db.run(`INSERT INTO mikrotiks (nombre, cloud, modelo, ip_interna, offline_timeout, last_seen, visible) VALUES (?, ?, ?, ?, ?, ?, 1)`,
-    [nombre, cloud, modelo, ip_interna, timeout, 0], () => {
+  const token = crypto.randomBytes(16).toString('hex');
+  db.run(`INSERT INTO mikrotiks (nombre, cloud, modelo, ip_interna, token, offline_timeout, last_seen, visible) VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
+    [nombre, cloud, modelo, ip_interna, token, timeout, 0], () => {
       res.redirect('/mikrotiks');
     });
 });
@@ -273,9 +288,8 @@ app.get('/logout', (req, res) => {
 
 // Monitoring endpoint for Mikrotik heartbeats
 const monitorApp = express();
-monitorApp.get('/ping', (req, res) => {
+monitorApp.get('/ping', verifyDeviceToken, (req, res) => {
   const { cloud } = req.query;
-  if (!cloud) return res.status(400).send('missing cloud');
   const now = Date.now();
   db.run(`UPDATE mikrotiks SET last_seen = ? WHERE cloud = ?`, [now, cloud], function (err) {
     if (err || this.changes === 0) return res.status(404).send('not found');
