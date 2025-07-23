@@ -87,4 +87,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     new DataTable(el, options);
   });
+
+  var copyBtn = document.getElementById('copyToken');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', function() {
+      var tokenInput = document.getElementById('tokenField');
+      if (tokenInput) {
+        navigator.clipboard.writeText(tokenInput.value);
+        copyBtn.textContent = 'Copiado';
+        setTimeout(function(){ copyBtn.textContent = 'Copiar'; }, 2000);
+      }
+    });
+  }
 });
